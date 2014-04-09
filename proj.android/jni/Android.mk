@@ -2,27 +2,32 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_MODULE := cocos2djs_shared
+LOCAL_MODULE := cocos2dcpp_shared
 
-LOCAL_MODULE_FILENAME := libcocos2djs
+LOCAL_MODULE_FILENAME := libcocos2dcpp
 
-LOCAL_SRC_FILES := hellojavascript/main.cpp \
-                   ../../Classes/AppDelegate.cpp
+FILE_LIST := hellocpp/main.cpp
+FILE_LIST += $(wildcard $(LOCAL_PATH)/../../Classes/*.cpp)
+LOCAL_SRC_FILES := $(FILE_LIST:$(LOCAL_PATH)/%=%)
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../Classes
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../Classes \
+$(LOCAL_PATH)/../../../../../extensions \
+$(LOCAL_PATH)/../../../../../extensions/GUI/CCControlExtension \
+$(LOCAL_PATH)/../../../../../cocos \
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../cocos2d/cocos/editor-support
 
 LOCAL_WHOLE_STATIC_LIBRARIES := cocos2dx_static
 LOCAL_WHOLE_STATIC_LIBRARIES += cocosdenshion_static
-LOCAL_WHOLE_STATIC_LIBRARIES += chipmunk_static
-LOCAL_WHOLE_STATIC_LIBRARIES += spidermonkey_static
-LOCAL_WHOLE_STATIC_LIBRARIES += scriptingcore-spidermonkey
-
-LOCAL_EXPORT_CFLAGS := -DCOCOS2D_DEBUG=2 -DCOCOS2D_JAVASCRIPT
+LOCAL_WHOLE_STATIC_LIBRARIES += box2d_static
+LOCAL_WHOLE_STATIC_LIBRARIES += cocos_extension_static
+LOCAL_WHOLE_STATIC_LIBRARIES += cocos_ui_static
+LOCAL_WHOLE_STATIC_LIBRARIES += cocostudio_static
 
 include $(BUILD_SHARED_LIBRARY)
 
-$(call import-module,cocos2dx)
-$(call import-module,CocosDenshion/android)
-$(call import-module,external/chipmunk)
-$(call import-module,scripting/javascript/spidermonkey-android)
-$(call import-module,scripting/javascript/bindings)
+$(call import-module,2d)
+$(call import-module,audio/android)
+$(call import-module,Box2D)
+$(call import-module,extensions)
+$(call import-module,ui)
+$(call import-module,editor-support/cocostudio)

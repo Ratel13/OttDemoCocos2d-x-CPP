@@ -1,100 +1,92 @@
 #include "AppDelegate.h"
-
-#include "cocos2d.h"
-#include "SimpleAudioEngine.h"
-#include "ScriptingCore.h"
-#include "generated/jsb_cocos2dx_auto.hpp"
-#include "generated/jsb_cocos2dx_extension_auto.hpp"
-#include "generated/jsb_cocos2dx_studio_auto.hpp"
-#include "jsb_cocos2dx_extension_manual.h"
-#include "jsb_cocos2dx_studio_manual.h"
-#include "cocos2d_specifics.hpp"
-#include "js_bindings_chipmunk_registration.h"
-#include "js_bindings_system_registration.h"
-#include "js_bindings_ccbreader.h"
-#include "jsb_opengl_registration.h"
-#include "XMLHTTPRequest.h"
-#include "jsb_websocket.h"
-
+#include <vector>
+#include <string>
+#include "AppMacros.h"
+#include "WelcomeScene.h"
 USING_NS_CC;
-using namespace CocosDenshion;
+using namespace std;
+AppDelegate::AppDelegate() {
 
-AppDelegate::AppDelegate()
+}
+
+AppDelegate::~AppDelegate() 
 {
 }
 
-AppDelegate::~AppDelegate()
-{
-    CCScriptEngineManager::purgeSharedManager();
-}
-
-bool AppDelegate::applicationDidFinishLaunching()
-{
-    // initialize director
-    CCDirector *pDirector = CCDirector::sharedDirector();
-    pDirector->setOpenGLView(CCEGLView::sharedOpenGLView());
+bool AppDelegate::applicationDidFinishLaunching() {
+    auto director = Director::getInstance();
+    auto glview = director->getOpenGLView();
+    if(!glview) {
+        glview = GLView::createWithRect("Cpp Empty Test",Rect(0, 0, 1920/2, 1080/2));
+        director->setOpenGLView(glview);
+    }
     
+    director->setOpenGLView(glview);
+    
+    // Set the design resolution
+    glview->setDesignResolutionSize(1920, 1080, ResolutionPolicy::SHOW_ALL);
+    
+	Size frameSize = glview->getFrameSize();
+    
+    vector<string> searchPath;
+    
+    // In this demo, we select resource according to the frame's height.
+    // If the resource size is different from design resolution size, you need to set contentScaleFactor.
+    // We use the ratio of resource's height to the height of design resolution,
+    // this can make sure that the resource's height could fit for the height of design resolution.
+    
+    // if the frame's height is larger than the height of medium resource size, select large resource.
+	if (frameSize.height > mediumResource.size.height)
+	{
+        searchPath.push_back(largeResource.directory);
+        
+       // director->setContentScaleFactor(MIN(largeResource.size.height/designResolutionSize.height, largeResource.size.width/designResolutionSize.width));
+	}
+    // if the frame's height is larger than the height of small resource size, select medium resource.
+    else if (frameSize.height > smallResource.size.height)
+    {
+        searchPath.push_back(mediumResource.directory);
+        
+        //director->setContentScaleFactor(MIN(mediumResource.size.height/designResolutionSize.height, mediumResource.size.width/designResolutionSize.width));
+    }
+    // if the frame's height is smaller than the height of medium resource size, select small resource.
+	else
+    {
+        searchPath.push_back(smallResource.directory);
+        
+       // director->setContentScaleFactor(MIN(smallResource.size.height/designResolutionSize.height, smallResource.size.width/designResolutionSize.width));
+    }
+    
+    // set searching path
+    FileUtils::getInstance()->setSearchPaths(searchPath);
+	
     // turn on display FPS
-    pDirector->setDisplayStats(true);
+    director->setDisplayStats(true);
     
     // set FPS. the default value is 1.0/60 if you don't call this
-    pDirector->setAnimationInterval(1.0 / 60);
+    director->setAnimationInterval(1.0 / 60);
     
-    ScriptingCore* sc = ScriptingCore::getInstance();
-    sc->addRegisterCallback(register_all_cocos2dx);
-    sc->addRegisterCallback(register_all_cocos2dx_extension);
-    sc->addRegisterCallback(register_all_cocos2dx_extension_manual);
-    sc->addRegisterCallback(register_cocos2dx_js_extensions);
-    sc->addRegisterCallback(register_all_cocos2dx_studio);
-    sc->addRegisterCallback(register_all_cocos2dx_studio_manual);
-    sc->addRegisterCallback(register_CCBuilderReader);
-    sc->addRegisterCallback(jsb_register_chipmunk);
-    sc->addRegisterCallback(jsb_register_system);
-    sc->addRegisterCallback(JSB_register_opengl);
-    sc->addRegisterCallback(MinXmlHttpRequest::_js_register);
-    sc->addRegisterCallback(register_jsb_websocket);
-
-    sc->start();
+    // create a scene. it's an autorelease object
+    auto scene = WelcomeScene::createScene();
     
-    CCScriptEngineProtocol *pEngine = ScriptingCore::getInstance();
-    CCScriptEngineManager::sharedManager()->setScriptEngine(pEngine);
-    ScriptingCore::getInstance()->runScript("cocos2d-jsb.js");
-       
+    // run
+    director->runWithScene(scene);
+    
     return true;
 }
 
-void handle_signal(int signal) {
-    static int internal_state = 0;
-    ScriptingCore* sc = ScriptingCore::getInstance();
-    // should start everything back
-    CCDirector* director = CCDirector::sharedDirector();
-    if (director->getRunningScene()) {
-        director->popToRootScene();
-    } else {
-        CCPoolManager::sharedPoolManager()->finalize();
-        if (internal_state == 0) {
-            //sc->dumpRoot(NULL, 0, NULL);
-            sc->start();
-            internal_state = 1;
-        } else {
-            sc->runScript("hello.js");
-            internal_state = 0;
-        }
-    }
-}
-
 // This function will be called when the app is inactive. When comes a phone call,it's be invoked too
-void AppDelegate::applicationDidEnterBackground()
-{
-    CCDirector::sharedDirector()->stopAnimation();
-    SimpleAudioEngine::sharedEngine()->pauseBackgroundMusic();
-    SimpleAudioEngine::sharedEngine()->pauseAllEffects();
+void AppDelegate::applicationDidEnterBackground() {
+    Director::getInstance()->stopAnimation();
+
+    // if you use SimpleAudioEngine, it must be pause
+    // SimpleAudioEngine::sharedEngine()->pauseBackgroundMusic();
 }
 
 // this function will be called when the app is active again
-void AppDelegate::applicationWillEnterForeground()
-{
-    CCDirector::sharedDirector()->startAnimation();
-    SimpleAudioEngine::sharedEngine()->resumeBackgroundMusic();
-    SimpleAudioEngine::sharedEngine()->resumeAllEffects();
+void AppDelegate::applicationWillEnterForeground() {
+    Director::getInstance()->startAnimation();
+
+    // if you use SimpleAudioEngine, it must resume here
+    // SimpleAudioEngine::sharedEngine()->resumeBackgroundMusic();
 }
